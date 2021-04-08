@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "pettable",
+  "version": "1.0.0",
+
+  "name": "Pettable",
+  "description": "Pet all friendly creatures!",
+  "authors": [
+    "Ellivers"
+  ],
+  "contact": {
+    "sources": "https://github.com/Ellivers/Pettable"
+  },
+
+  "license": "MIT",
+  "icon": "icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.ellivers.pettable.Pettable"
+    ]
+  },
+  "mixins": [
+    "pettable.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.7.4",
+    "fabric": "*",
+    "minecraft": "1.16.x"
+  }
+}
