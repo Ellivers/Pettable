@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "pettable",
-  "version": "1.0.0",
+  "version": "1.1.0",
 
   "name": "Pettable",
   "description": "Pet all friendly creatures!",
