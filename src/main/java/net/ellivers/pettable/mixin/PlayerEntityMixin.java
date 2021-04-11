@@ -67,7 +67,7 @@ public abstract class PlayerEntityMixin implements Angerable {
     }
 
     private boolean checkPlayer(PlayerEntity player, Hand hand) {
-        return player.shouldCancelInteraction() && player.getStackInHand(hand).isEmpty() && player.getMainHandStack().isEmpty();
+        return !player.isSpectator() && player.shouldCancelInteraction() && player.getStackInHand(hand).isEmpty() && player.getMainHandStack().isEmpty();
     }
 
     private void successfullyPet(World world, Entity entity) {
