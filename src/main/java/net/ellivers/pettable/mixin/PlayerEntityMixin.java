@@ -94,7 +94,7 @@ public abstract class PlayerEntityMixin implements Angerable {
             ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
             ((MobEntity) entity).playAmbientSound();
         }
-        if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).getOwnerUuid() == ((LivingEntity) (Object) this).getUuid()) {
+        if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner((LivingEntity) (Object) this)) {
             ((TameableEntity) entity).heal(2);
             ((LivingEntity) (Object) this).heal(2);
             spawnHearts(world, (LivingEntity) (Object) this);
