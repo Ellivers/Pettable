@@ -1,13 +1,13 @@
 package net.ellivers.pettable;
 
+import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.ellivers.pettable.config.ModConfig;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.tag.TagRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
-
-import java.io.IOException;
 
 public class Pettable implements ModInitializer {
 
@@ -23,11 +23,7 @@ public class Pettable implements ModInitializer {
 		NOT_PETTABLE = TagRegistry.entityType(new Identifier("pettable", "not_pettable"));
 		NOT_PETTABLE_ADULT = TagRegistry.entityType(new Identifier("pettable", "not_pettable_adult"));
 
-		try {
-			ModConfig.load();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		ModConfig.save();
+		AutoConfig.register(ModConfig.class, GsonConfigSerializer::new);
+
 	}
 }

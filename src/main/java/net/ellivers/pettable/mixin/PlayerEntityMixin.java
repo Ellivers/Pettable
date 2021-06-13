@@ -1,5 +1,7 @@
 package net.ellivers.pettable.mixin;
 
+import me.shedaniel.autoconfig.AutoConfig;
+import net.ellivers.pettable.config.ModConfig;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -22,9 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Random;
 
-import static net.ellivers.pettable.Pettable.NOT_PETTABLE;
-import static net.ellivers.pettable.Pettable.NOT_PETTABLE_ADULT;
-import static net.ellivers.pettable.config.ModConfig.heal_owner;
+import static net.ellivers.pettable.Pettable.*;
 
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin implements Angerable {
@@ -72,7 +72,6 @@ public abstract class PlayerEntityMixin implements Angerable {
     }
 
     private void successfullyPet(World world, Entity entity) {
-        System.out.println(heal_owner);
 
         this.petCooldown = 30;
 
@@ -95,7 +94,7 @@ public abstract class PlayerEntityMixin implements Angerable {
             ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
             ((MobEntity) entity).playAmbientSound();
         }
-        if (entity instanceof TameableEntity && ((TameableEntity) entity).getOwnerUuid() == ((LivingEntity) (Object) this).getUuid()) {
+        if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).getOwnerUuid() == ((LivingEntity) (Object) this).getUuid()) {
             ((TameableEntity) entity).heal(2);
             ((LivingEntity) (Object) this).heal(2);
             spawnHearts(world, (LivingEntity) (Object) this);
