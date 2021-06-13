@@ -24,6 +24,7 @@ import java.util.Random;
 
 import static net.ellivers.pettable.Pettable.NOT_PETTABLE;
 import static net.ellivers.pettable.Pettable.NOT_PETTABLE_ADULT;
+import static net.ellivers.pettable.config.ModConfig.heal_owner;
 
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin implements Angerable {
@@ -71,6 +72,8 @@ public abstract class PlayerEntityMixin implements Angerable {
     }
 
     private void successfullyPet(World world, Entity entity) {
+        System.out.println(heal_owner);
+
         this.petCooldown = 30;
 
         if (entity instanceof SlimeEntity) {
