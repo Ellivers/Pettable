@@ -4,7 +4,7 @@ import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.ellivers.pettable.config.ModConfig;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.tag.TagRegistry;
+import net.fabricmc.fabric.api.tag.TagFactory;
 import net.minecraft.entity.EntityType;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
@@ -20,8 +20,8 @@ public class Pettable implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		NOT_PETTABLE = TagRegistry.entityType(new Identifier("pettable", "not_pettable"));
-		NOT_PETTABLE_ADULT = TagRegistry.entityType(new Identifier("pettable", "not_pettable_adult"));
+		NOT_PETTABLE = TagFactory.ENTITY_TYPE.create(new Identifier("pettable", "not_pettable"));
+		NOT_PETTABLE_ADULT = TagFactory.ENTITY_TYPE.create(new Identifier("pettable", "not_pettable_adult"));
 
 		AutoConfig.register(ModConfig.class, GsonConfigSerializer::new);
 
