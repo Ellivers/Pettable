@@ -59,7 +59,7 @@ public abstract class PlayerEntityMixin implements Angerable {
                 else if (entity instanceof PufferfishEntity && ((PufferfishEntity) entity).getPuffState() > 0) {
                     entity.onPlayerCollision((PlayerEntity) (Object) this);
                     cir.setReturnValue(ActionResult.SUCCESS);
-                } else if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && !((net.minecraft.entity.mob.MobEntity) entity).isBaby())) {
+                } else if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && !((MobEntity) entity).isBaby())) {
                     successfullyPet(entity.getEntityWorld(), entity);
                     cir.setReturnValue(ActionResult.SUCCESS);
                 }
