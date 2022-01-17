@@ -41,6 +41,7 @@ public abstract class PlayerEntityMixin implements Angerable {
     public void interact(Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         if ((entity instanceof PassiveEntity
                 || entity instanceof AmbientEntity
+                || entity instanceof PlayerEntity
                 || entity instanceof WaterCreatureEntity
                 || (entity instanceof SlimeEntity && !(entity instanceof MagmaCubeEntity) && ((SlimeEntity) entity).isSmall()))
                 && checkPlayer(((PlayerEntity) (Object) this), hand)) {
@@ -49,7 +50,7 @@ public abstract class PlayerEntityMixin implements Angerable {
                 EntityType<?> type = entity.getType();
 
                 // Special case for angery entities
-                if (entity instanceof Angerable) {
+                if (!(entity instanceof PlayerEntity) && entity instanceof Angerable) {
                     if (!((Angerable) entity).hasAngerTime()) {
                         successfullyPet(entity.getEntityWorld(), entity);
                         cir.setReturnValue(ActionResult.SUCCESS);
@@ -90,14 +91,16 @@ public abstract class PlayerEntityMixin implements Angerable {
             ((SlimeEntity) entity).targetStretch = -0.5F;
         }
 
-        if (!entity.isSilent()) {
-            ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
-            ((MobEntity) entity).playAmbientSound();
-        }
-        if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner((LivingEntity) (Object) this)) {
-            ((TameableEntity) entity).heal(2);
-            ((LivingEntity) (Object) this).heal(2);
-            spawnHearts(world, (LivingEntity) (Object) this);
+        if (!(entity instanceof PlayerEntity)) {
+            if (!entity.isSilent()) {
+                ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
+                ((MobEntity) entity).playAmbientSound();
+            }
+            if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner((LivingEntity) (Object) this)) {
+                ((TameableEntity) entity).heal(2);
+                ((LivingEntity) (Object) this).heal(2);
+                spawnHearts(world, (LivingEntity) (Object) this);
+            }
         }
         spawnHearts(world, entity);
     }
