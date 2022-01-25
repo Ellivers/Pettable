@@ -2,9 +2,7 @@ package net.ellivers.pettable.client;
 
 import net.ellivers.pettable.Pettable;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.world.ClientEntityManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,7 +19,10 @@ public class PettableClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(new Identifier(Pettable.MOD_ID,"server_pet"), (client, handler, buf, responseSender) -> {
-            Entity target = handler.getWorld().getEntityById(buf.readInt());
+            boolean player = buf.readBoolean();
+
+            Entity target = player ? handler.getWorld().getPlayerByUuid(buf.readUuid()) : handler.getWorld().getEntityById(buf.readInt());
+
             client.execute(() -> {
                 spawnHearts(client.world, target);
             });
@@ -41,7 +42,6 @@ public class PettableClient implements ClientModInitializer {
                 world.addParticle(ParticleTypes.ITEM_SLIME, entity.getX() + (double)h, entity.getY(), entity.getZ() + (double)k, 0.0D, 0.0D, 0.0D);
             }
 
-            if (!entity.isSilent()) entity.playSound(SoundEvents.ENTITY_SLIME_SQUISH_SMALL, 0.4F * (float)i, ((petRandom.nextFloat() - petRandom.nextFloat()) * 0.2F + 1.0F) / 0.8F);
             ((SlimeEntity) entity).targetStretch = -0.5F;
         }
         double d = petRandom.nextGaussian() * 0.02D;
