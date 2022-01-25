@@ -2,18 +2,29 @@ package net.ellivers.pettable.mixin;
 
 import me.shedaniel.autoconfig.AutoConfig;
 import net.ellivers.pettable.config.ModConfig;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.*;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.PufferfishEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -103,6 +114,11 @@ public abstract class PlayerEntityMixin implements Angerable {
             }
         }
         spawnHearts(world, entity);
+        if(world.isClient() ){
+            PacketByteBuf buf = PacketByteBufs.create();
+            buf.writeInt(entity.getId());
+            ClientPlayNetworking.send(new Identifier(MOD_ID,"client_pet"), buf);
+        }
     }
 
     private void spawnHearts(World world, Entity entity) {

@@ -22,6 +22,9 @@
     ],
     "main": [
       "net.ellivers.pettable.Pettable"
+    ],
+    "client": [
+      "net.ellivers.pettable.client.PettableClient"
     ]
   },
   "mixins": [
