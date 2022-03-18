@@ -2,6 +2,9 @@ package net.ellivers.pettable.mixin;
 
 import me.shedaniel.autoconfig.AutoConfig;
 import net.ellivers.pettable.config.ModConfig;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -10,11 +13,13 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.PufferfishEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -41,6 +46,7 @@ public abstract class PlayerEntityMixin implements Angerable {
     public void interact(Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         if ((entity instanceof PassiveEntity
                 || entity instanceof AmbientEntity
+                || entity instanceof PlayerEntity
                 || entity instanceof WaterCreatureEntity
                 || (entity instanceof SlimeEntity && !(entity instanceof MagmaCubeEntity) && ((SlimeEntity) entity).isSmall()))
                 && checkPlayer(((PlayerEntity) (Object) this), hand)) {
@@ -49,7 +55,7 @@ public abstract class PlayerEntityMixin implements Angerable {
                 EntityType<?> type = entity.getType();
 
                 // Special case for angery entities
-                if (entity instanceof Angerable) {
+                if (!(entity instanceof PlayerEntity) && entity instanceof Angerable) {
                     if (!((Angerable) entity).hasAngerTime()) {
                         successfullyPet(entity.getEntityWorld(), entity);
                         cir.setReturnValue(ActionResult.SUCCESS);
@@ -59,7 +65,7 @@ public abstract class PlayerEntityMixin implements Angerable {
                 else if (entity instanceof PufferfishEntity && ((PufferfishEntity) entity).getPuffState() > 0) {
                     entity.onPlayerCollision((PlayerEntity) (Object) this);
                     cir.setReturnValue(ActionResult.SUCCESS);
-                } else if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && !((MobEntity) entity).isBaby())) {
+                } else if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && entity instanceof MobEntity && !((MobEntity) entity).isBaby())) {
                     successfullyPet(entity.getEntityWorld(), entity);
                     cir.setReturnValue(ActionResult.SUCCESS);
                 }
@@ -77,37 +83,37 @@ public abstract class PlayerEntityMixin implements Angerable {
 
         if (entity instanceof SlimeEntity) {
             int i = ((SlimeEntity) entity).getSize();
-
-            if (!entity.isInvisible()) for(int j = 0; j < i * 8; ++j) {
-                float f = petRandom.nextFloat() * 6.2831855F;
-                float g = petRandom.nextFloat() * 0.5F + 0.5F;
-                float h = MathHelper.sin(f) * (float)i * 0.5F * g;
-                float k = MathHelper.cos(f) * (float)i * 0.5F * g;
-                entity.world.addParticle(ParticleTypes.ITEM_SLIME, entity.getX() + (double)h, entity.getY(), entity.getZ() + (double)k, 0.0D, 0.0D, 0.0D);
-            }
-
             if (!entity.isSilent()) entity.playSound(SoundEvents.ENTITY_SLIME_SQUISH_SMALL, 0.4F * (float)i, ((petRandom.nextFloat() - petRandom.nextFloat()) * 0.2F + 1.0F) / 0.8F);
-            ((SlimeEntity) entity).targetStretch = -0.5F;
         }
 
-        if (!entity.isSilent()) {
-            ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
-            ((MobEntity) entity).playAmbientSound();
+        if (!(entity instanceof PlayerEntity)) {
+            if (!entity.isSilent()) {
+                ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
+                ((MobEntity) entity).playAmbientSound();
+            }
+            if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner((LivingEntity) (Object) this)) {
+                ((TameableEntity) entity).heal(2);
+                ((LivingEntity) (Object) this).heal(2);
+                networkPet(world, (PlayerEntity) (Object) this);
+            }
         }
-        if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner((LivingEntity) (Object) this)) {
-            ((TameableEntity) entity).heal(2);
-            ((LivingEntity) (Object) this).heal(2);
-            spawnHearts(world, (LivingEntity) (Object) this);
-        }
-        spawnHearts(world, entity);
+        networkPet(world, entity);
     }
 
-    private void spawnHearts(World world, Entity entity) {
-        double d = petRandom.nextGaussian() * 0.02D;
-        double e = petRandom.nextGaussian() * 0.02D;
-        double f = petRandom.nextGaussian() * 0.02D;
-        for (int k = 0; k < 3; ++k)
-            world.addParticle(ParticleTypes.HEART, entity.getParticleX(1.0D), entity instanceof PlayerEntity ? entity.getY() + 0.5D : entity.getEyeY(), entity.getParticleZ(1.0D), d, e, f);
+    private void networkPet(World world, Entity entity) {
+        if(!world.isClient() ){
+            PacketByteBuf buf = PacketByteBufs.create();
+            if(entity instanceof PlayerEntity){
+                buf.writeBoolean(true);
+                buf.writeUuid(PlayerEntity.getUuidFromProfile(((PlayerEntity)entity).getGameProfile()));
+            }else{
+                buf.writeBoolean(false);
+                buf.writeInt(entity.getId());
+            }
+            for (ServerPlayerEntity player : PlayerLookup.tracking((ServerWorld) entity.getEntityWorld(),entity.getBlockPos())){
+                ServerPlayNetworking.send(player, new Identifier(MOD_ID, "server_pet"), buf);
+            }
+        }
     }
 
 }
