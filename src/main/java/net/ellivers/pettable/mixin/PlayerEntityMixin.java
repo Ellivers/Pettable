@@ -1,6 +1,5 @@
 package net.ellivers.pettable.mixin;
 
-import me.shedaniel.autoconfig.AutoConfig;
 import net.ellivers.pettable.config.ModConfig;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -29,6 +28,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Random;
 
+import static net.ellivers.pettable.EntityTags.NOT_PETTABLE;
+import static net.ellivers.pettable.EntityTags.NOT_PETTABLE_ADULT;
 import static net.ellivers.pettable.Pettable.*;
 
 @Mixin(PlayerEntity.class)
@@ -49,7 +50,7 @@ public abstract class PlayerEntityMixin implements Angerable {
                 || entity instanceof PlayerEntity
                 || entity instanceof WaterCreatureEntity
                 || (entity instanceof SlimeEntity && !(entity instanceof MagmaCubeEntity) && ((SlimeEntity) entity).isSmall()))
-                && checkPlayer(((PlayerEntity) (Object) this), hand)) {
+                && playerCanPet(((PlayerEntity) (Object) this), hand) && !(entity instanceof PlayerEntity && !ModConfig.pet_players)) {
             if (this.petCooldown <= 0) {
 
                 EntityType<?> type = entity.getType();
@@ -73,13 +74,13 @@ public abstract class PlayerEntityMixin implements Angerable {
         }
     }
 
-    private boolean checkPlayer(PlayerEntity player, Hand hand) {
+    private boolean playerCanPet(PlayerEntity player, Hand hand) {
         return !player.isSpectator() && player.shouldCancelInteraction() && player.getStackInHand(hand).isEmpty() && player.getMainHandStack().isEmpty();
     }
 
     private void successfullyPet(World world, Entity entity) {
 
-        this.petCooldown = 30;
+        this.petCooldown = ModConfig.petting_cooldown;
 
         if (entity instanceof SlimeEntity) {
             int i = ((SlimeEntity) entity).getSize();
@@ -91,7 +92,7 @@ public abstract class PlayerEntityMixin implements Angerable {
                 ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
                 ((MobEntity) entity).playAmbientSound();
             }
-            if (AutoConfig.getConfigHolder(ModConfig.class).getConfig().heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner((LivingEntity) (Object) this)) {
+            if (ModConfig.heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner((LivingEntity) (Object) this)) {
                 ((TameableEntity) entity).heal(2);
                 ((LivingEntity) (Object) this).heal(2);
                 networkPet(world, (PlayerEntity) (Object) this);
@@ -101,12 +102,12 @@ public abstract class PlayerEntityMixin implements Angerable {
     }
 
     private void networkPet(World world, Entity entity) {
-        if(!world.isClient() ){
+        if (!world.isClient() ){
             PacketByteBuf buf = PacketByteBufs.create();
-            if(entity instanceof PlayerEntity){
+            if (entity instanceof PlayerEntity){
                 buf.writeBoolean(true);
                 buf.writeUuid(PlayerEntity.getUuidFromProfile(((PlayerEntity)entity).getGameProfile()));
-            }else{
+            } {
                 buf.writeBoolean(false);
                 buf.writeInt(entity.getId());
             }

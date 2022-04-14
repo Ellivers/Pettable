@@ -2,11 +2,12 @@ package net.ellivers.pettable.config;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-import me.shedaniel.autoconfig.AutoConfig;
+
+import static net.ellivers.pettable.Pettable.MOD_ID;
 
 public class ModMenuEntry implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return parent -> AutoConfig.getConfigScreen(ModConfig.class, parent).get();
+        return parent -> MidnightConfig.getScreen(parent, MOD_ID);
     }
 }
