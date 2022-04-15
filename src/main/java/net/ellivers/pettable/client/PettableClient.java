@@ -1,36 +1,134 @@
 package net.ellivers.pettable.client;
 
-import net.ellivers.pettable.Pettable;
+import net.ellivers.pettable.config.ModConfig;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.mob.SlimeEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.*;
+import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.Random;
 
+import static net.ellivers.pettable.Pettable.*;
+
 
 public class PettableClient implements ClientModInitializer {
+    private static KeyBinding keyBinding;
+    private int petCooldown;
+
     @Override
     public void onInitializeClient() {
-        ClientPlayNetworking.registerGlobalReceiver(new Identifier(Pettable.MOD_ID,"server_pet"), (client, handler, buf, responseSender) -> {
-            boolean player = buf.readBoolean();
+        keyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key." + MOD_ID + ".pet",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_Y,
+                "key.categories." + MOD_ID
+        ));
 
-            Entity target = player ? handler.getWorld().getPlayerByUuid(buf.readUuid()) : handler.getWorld().getEntityById(buf.readInt());
+        ClientPlayNetworking.registerGlobalReceiver(new Identifier(MOD_ID,"server_pet"), (client, handler, buf, responseSender) -> {
+            boolean petPlayer = buf.readBoolean();
 
-            client.execute(() -> {
-                spawnHearts(client.world, target);
-            });
+            Entity target = petPlayer ? handler.getWorld().getPlayerByUuid(buf.readUuid()) : handler.getWorld().getEntityById(buf.readInt());
+
+            client.execute(() -> pettingEffects(client.world, target));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(new Identifier(MOD_ID, "player_heal"), (client, handler, buf, responseSender) -> {
+            Entity target = handler.getWorld().getPlayerByUuid(buf.readUuid());
+            client.execute(() -> pettingEffects(client.world, target));
+        });
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (petCooldown > 0) petCooldown--;
+            else if (keyBinding.isPressed() && client.player != null) {
+                client.execute(this::attemptPet);
+            }
         });
     }
 
+    private void attemptPet() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        HitResult hit = client.crosshairTarget;
+
+        if (hit != null && hit.getType().equals(HitResult.Type.ENTITY)) {
+            Entity entity = ((EntityHitResult) hit).getEntity();
+            PlayerEntity playerEntity = client.player;
+            assert playerEntity != null;
+            Hand hand = playerEntity.getActiveHand();
+
+            if ((entity instanceof PassiveEntity
+            || entity instanceof AmbientEntity
+            || entity instanceof PlayerEntity
+            || entity instanceof WaterCreatureEntity
+            || (entity instanceof SlimeEntity && !(entity instanceof MagmaCubeEntity) && ((SlimeEntity) entity).isSmall()))
+            && playerCanPet(playerEntity, hand) && !(entity instanceof PlayerEntity && !ModConfig.pet_players)) {
+
+                EntityType<?> type = entity.getType();
+
+                // Special case for angery entities
+                if (!(entity instanceof PlayerEntity) && entity instanceof Angerable) {
+                    if (!((Angerable) entity).hasAngerTime()) {
+                        successfullyPet(entity);
+                    }
+                }
+                else if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && entity instanceof MobEntity && !((MobEntity) entity).isBaby())) {
+                    successfullyPet(entity);
+                }
+            }
+        }
+    }
+
+    private boolean playerCanPet(PlayerEntity player, Hand hand) {
+        return !player.isSpectator() && player.getStackInHand(hand).isEmpty() && player.getMainHandStack().isEmpty();
+    }
+
+    private void successfullyPet(Entity entity) {
+        this.petCooldown = ModConfig.petting_cooldown;
+
+        if (entity instanceof SlimeEntity) {
+            int i = ((SlimeEntity) entity).getSize();
+            if (!entity.isSilent()) entity.playSound(SoundEvents.ENTITY_SLIME_SQUISH_SMALL, 0.4F * (float)i, ((petRandom.nextFloat() - petRandom.nextFloat()) * 0.2F + 1.0F) / 0.8F);
+        }
+
+        if (!(entity instanceof PlayerEntity) && !entity.isSilent()) {
+            ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
+            ((MobEntity) entity).playAmbientSound();
+        }
+        networkPet(entity);
+    }
+
+    private void networkPet(Entity entity) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        if (entity instanceof PlayerEntity){
+            buf.writeBoolean(true);
+            buf.writeUuid(PlayerEntity.getUuidFromProfile(((PlayerEntity)entity).getGameProfile()));
+        } else {
+            buf.writeBoolean(false);
+            buf.writeInt(entity.getId());
+        }
+        ClientPlayNetworking.send(new Identifier(MOD_ID, "client_pet"), buf);
+    }
+
     private final Random petRandom = new Random();
-    private void spawnHearts(World world, Entity entity) {
+    private void pettingEffects(World world, Entity entity) {
         if (entity instanceof SlimeEntity) {
             int i = ((SlimeEntity) entity).getSize();
 

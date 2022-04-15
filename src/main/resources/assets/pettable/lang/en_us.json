@@ -2,5 +2,7 @@
   "pettable.midnightconfig.title": "Pettable",
   "pettable.midnightconfig.heal_owner": "Heal when petting a tamed mob",
   "pettable.midnightconfig.pet_players": "Allow petting players",
-  "pettable.midnightconfig.petting_cooldown": "Petting cooldown (ticks)"
+  "pettable.midnightconfig.petting_cooldown": "Petting cooldown (ticks)",
+  "key.categories.pettable": "Pettable",
+  "key.pettable.pet": "Pet"
 }
