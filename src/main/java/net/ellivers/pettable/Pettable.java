@@ -81,21 +81,19 @@ public class Pettable implements ModInitializer {
 					player.heal(2);
 
 					PacketByteBuf buf2 = PacketByteBufs.create();
-					buf2.writeUuid(PlayerEntity.getUuidFromProfile(player.getGameProfile()));
+					buf2.writeUuid(player.getGameProfile().getId());
 					for (ServerPlayerEntity player1 : PlayerLookup.tracking((ServerWorld) world, player.getBlockPos())) {
 						if (areNotSamePlayer(player, player1))
-						ServerPlayNetworking.send(player1, new Identifier(MOD_ID, "player_heal"), buf2);
+							ServerPlayNetworking.send(player1, new Identifier(MOD_ID, "player_heal"), buf2);
 					}
 				}
 				// Funni puffer sting
 				if (entity instanceof PufferfishEntity && ((PufferfishEntity) entity).getPuffState() > 0) {
 					entity.onPlayerCollision(player);
 				}
-				else {
-					for (ServerPlayerEntity player1 : PlayerLookup.tracking((ServerWorld) entity.getEntityWorld(), entity.getBlockPos())) {
-						if (areNotSamePlayer(player, player1))
+				for (ServerPlayerEntity player1 : PlayerLookup.tracking((ServerWorld) entity.getEntityWorld(), entity.getBlockPos())) {
+					if (areNotSamePlayer(player, player1))
 						ServerPlayNetworking.send(player1, new Identifier(MOD_ID, "server_pet"), buf1);
-					}
 				}
 			}
 		});
