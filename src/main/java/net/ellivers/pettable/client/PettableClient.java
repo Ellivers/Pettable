@@ -8,11 +8,15 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.sound.SoundManager;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.*;
 import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.passive.PufferfishEntity;
+import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleTypes;
@@ -44,11 +48,15 @@ public class PettableClient implements ClientModInitializer {
         ));
 
         ClientPlayNetworking.registerGlobalReceiver(new Identifier(MOD_ID,"server_pet"), (client, handler, buf, responseSender) -> {
+            PlayerEntity petter = handler.getWorld().getPlayerByUuid(buf.readUuid());
             boolean petPlayer = buf.readBoolean();
 
             Entity target = petPlayer ? handler.getWorld().getPlayerByUuid(buf.readUuid()) : handler.getWorld().getEntityById(buf.readInt());
 
-            client.execute(() -> pettingEffects(client.world, target));
+            client.execute(() -> {
+                petter.swingHand(petter.getActiveHand());
+                if (shouldShowEffects(target)) pettingEffects(client.world, target);
+            });
         });
 
         ClientPlayNetworking.registerGlobalReceiver(new Identifier(MOD_ID, "player_heal"), (client, handler, buf, responseSender) -> {
@@ -62,6 +70,10 @@ public class PettableClient implements ClientModInitializer {
                 client.execute(this::attemptPet);
             }
         });
+    }
+
+    private boolean shouldShowEffects(Entity entity) {
+        return !(entity instanceof PufferfishEntity && ((PufferfishEntity) entity).getPuffState() > 0);
     }
 
     private void attemptPet() {
@@ -83,14 +95,15 @@ public class PettableClient implements ClientModInitializer {
 
                 EntityType<?> type = entity.getType();
 
-                // Special case for angery entities
-                if (!(entity instanceof PlayerEntity) && entity instanceof Angerable) {
-                    if (!((Angerable) entity).hasAngerTime()) {
+                if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && entity instanceof MobEntity && !((MobEntity) entity).isBaby())) {
+                    // Special case for angery entities
+                    if (!(entity instanceof PlayerEntity) && entity instanceof Angerable) {
+                        if (!((Angerable) entity).hasAngerTime()) {
+                            successfullyPet(entity);
+                        }
+                    } else {
                         successfullyPet(entity);
                     }
-                }
-                else if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && entity instanceof MobEntity && !((MobEntity) entity).isBaby())) {
-                    successfullyPet(entity);
                 }
             }
         }
@@ -103,15 +116,13 @@ public class PettableClient implements ClientModInitializer {
     private void successfullyPet(Entity entity) {
         this.petCooldown = ModConfig.petting_cooldown;
 
-        if (entity instanceof SlimeEntity) {
-            int i = ((SlimeEntity) entity).getSize();
-            if (!entity.isSilent()) entity.playSound(SoundEvents.ENTITY_SLIME_SQUISH_SMALL, 0.4F * (float)i, ((petRandom.nextFloat() - petRandom.nextFloat()) * 0.2F + 1.0F) / 0.8F);
+        PlayerEntity playerEntity = MinecraftClient.getInstance().player;
+        if (ModConfig.heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner(playerEntity)) {
+            pettingEffects(playerEntity.getEntityWorld(), playerEntity);
         }
+        if (shouldShowEffects(entity)) pettingEffects(entity.getEntityWorld(), entity);
+        playerEntity.swingHand(playerEntity.getActiveHand());
 
-        if (!(entity instanceof PlayerEntity) && !entity.isSilent()) {
-            ((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
-            ((MobEntity) entity).playAmbientSound();
-        }
         networkPet(entity);
     }
 
@@ -119,7 +130,7 @@ public class PettableClient implements ClientModInitializer {
         PacketByteBuf buf = PacketByteBufs.create();
         if (entity instanceof PlayerEntity){
             buf.writeBoolean(true);
-            buf.writeUuid(PlayerEntity.getUuidFromProfile(((PlayerEntity)entity).getGameProfile()));
+            buf.writeUuid(((PlayerEntity)entity).getGameProfile().getId());
         } else {
             buf.writeBoolean(false);
             buf.writeInt(entity.getId());
