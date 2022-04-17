@@ -86,25 +86,37 @@ public class PettableClient implements ClientModInitializer {
             assert playerEntity != null;
             Hand hand = playerEntity.getActiveHand();
 
-            if ((entity instanceof PassiveEntity
-            || entity instanceof AmbientEntity
-            || entity instanceof PlayerEntity
-            || entity instanceof WaterCreatureEntity
-            || (entity instanceof SlimeEntity && !(entity instanceof MagmaCubeEntity) && ((SlimeEntity) entity).isSmall()))
-            && playerCanPet(playerEntity, hand) && !(entity instanceof PlayerEntity && !ModConfig.pet_players)) {
+            EntityType<?> type = entity.getType();
 
-                EntityType<?> type = entity.getType();
+            /* Whoa, that's a huge if-check
+               Here's how it works.
+               It checks if the entity:
+               * Is an instance of PassiveEntity, AmbientEntity, PlayerEntity, or WaterCreatureEntity
+               OR
+               * Is a small SlimeEntity and not an instance of MagmaCubeEntity
+               Then, if the former check was true, it does the following:
+               * Makes sure the entity isn't a player while the config doesn't allow player petting
+               * Makes sure the entity isn't in the not_pettable_adult tag and is an adult
+               ALL of the checks above don't matter if the entity is in the pettable_anyway tag
+               Finally, it does the following:
+               * Makes sure the entity isn't in the not_pettable tag
+               * Checks if the player is allowed to pet (correct gamemode and isn't holding anything)
 
-                if (!type.isIn(NOT_PETTABLE) && !(type.isIn(NOT_PETTABLE_ADULT) && entity instanceof MobEntity && !((MobEntity) entity).isBaby())) {
-                    // Special case for angery entities
-                    if (!(entity instanceof PlayerEntity) && entity instanceof Angerable) {
-                        if (!((Angerable) entity).hasAngerTime()) {
-                            successfullyPet(entity);
-                        }
-                    } else {
+               Thanks for coming to my TED-talk
+             */
+            if (((( entity instanceof PassiveEntity || entity instanceof AmbientEntity || entity instanceof PlayerEntity || entity instanceof WaterCreatureEntity
+            || (entity instanceof SlimeEntity && !(entity instanceof MagmaCubeEntity) && ((SlimeEntity) entity).isSmall()) ) && !(entity instanceof PlayerEntity && !ModConfig.pet_players)
+            && !(type.isIn(NOT_PETTABLE_ADULT) && entity instanceof MobEntity && !((MobEntity) entity).isBaby())) || type.isIn(PETTABLE_ANYWAY)) && !type.isIn(NOT_PETTABLE) && playerCanPet(playerEntity, hand)) {
+
+                // Special case for angery entities
+                if (!(entity instanceof PlayerEntity) && entity instanceof Angerable) {
+                    if (!((Angerable) entity).hasAngerTime()) {
                         successfullyPet(entity);
                     }
+                } else {
+                    successfullyPet(entity);
                 }
+
             }
         }
     }

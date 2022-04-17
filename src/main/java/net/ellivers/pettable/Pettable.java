@@ -29,6 +29,8 @@ public class Pettable implements ModInitializer {
 
 	public static final String MOD_ID = "pettable";
 
+	// pettable even if the entity type otherwise wouldn't be allowed
+	public static final TagKey<EntityType<?>> PETTABLE_ANYWAY = TagKey.of(Registry.ENTITY_TYPE_KEY, new Identifier(MOD_ID, "pettable_anyway"));
 	// not pettable
 	public static final TagKey<EntityType<?>> NOT_PETTABLE = TagKey.of(Registry.ENTITY_TYPE_KEY, new Identifier(MOD_ID, "not_pettable"));
 	// only pettable as babies
@@ -71,7 +73,7 @@ public class Pettable implements ModInitializer {
 					if (!entity.isSilent()) entity.playSound(SoundEvents.ENTITY_SLIME_SQUISH_SMALL, 0.4F * (float)i, ((petRandom.nextFloat() - petRandom.nextFloat()) * 0.2F + 1.0F) / 0.8F);
 				}
 
-				if (!(entity instanceof PlayerEntity) && !entity.isSilent()) {
+				if (entity instanceof MobEntity && !entity.isSilent()) {
 					((MobEntity) entity).ambientSoundChance = -((MobEntity) entity).getMinAmbientSoundDelay();
 					((MobEntity) entity).playAmbientSound();
 				}
