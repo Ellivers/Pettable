@@ -14,12 +14,12 @@ import net.minecraft.entity.passive.PufferfishEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 import java.util.Random;
@@ -30,11 +30,11 @@ public class Pettable implements ModInitializer {
 	public static final String MOD_ID = "pettable";
 
 	// pettable even if the entity type otherwise wouldn't be allowed
-	public static final TagKey<EntityType<?>> PETTABLE_ANYWAY = TagKey.of(Registry.ENTITY_TYPE_KEY, new Identifier(MOD_ID, "pettable_anyway"));
+	public static final TagKey<EntityType<?>> PETTABLE_ANYWAY = TagKey.of(RegistryKeys.ENTITY_TYPE, new Identifier(MOD_ID, "pettable_anyway"));
 	// not pettable
-	public static final TagKey<EntityType<?>> NOT_PETTABLE = TagKey.of(Registry.ENTITY_TYPE_KEY, new Identifier(MOD_ID, "not_pettable"));
+	public static final TagKey<EntityType<?>> NOT_PETTABLE = TagKey.of(RegistryKeys.ENTITY_TYPE, new Identifier(MOD_ID, "not_pettable"));
 	// only pettable as babies
-	public static final TagKey<EntityType<?>> NOT_PETTABLE_ADULT = TagKey.of(Registry.ENTITY_TYPE_KEY, new Identifier(MOD_ID, "not_pettable_adult"));
+	public static final TagKey<EntityType<?>> NOT_PETTABLE_ADULT = TagKey.of(RegistryKeys.ENTITY_TYPE, new Identifier(MOD_ID, "not_pettable_adult"));
 
 	private boolean areNotSamePlayer(PlayerEntity player1, PlayerEntity player2) {
 		return !player1.getGameProfile().getId().equals(player2.getGameProfile().getId());
