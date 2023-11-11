@@ -102,7 +102,7 @@ public class PettableClient implements ClientModInitializer {
                * Makes sure the entity isn't in the not_pettable tag
                * Checks if the player is allowed to pet (correct gamemode and isn't holding anything)
 
-               Thanks for coming to my TED-talk
+               Thanks for coming to my TED-talk.
              */
             if (((( entity instanceof PassiveEntity || entity instanceof AmbientEntity || entity instanceof PlayerEntity || entity instanceof WaterCreatureEntity
             || (entity instanceof SlimeEntity && !(entity instanceof MagmaCubeEntity) && ((SlimeEntity) entity).isSmall()) ) && !(entity instanceof PlayerEntity && !ModConfig.pet_players)
