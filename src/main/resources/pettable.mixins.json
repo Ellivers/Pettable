@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.ellivers.pettable.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+  ],
+  "client": [
+    "InGameHudAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

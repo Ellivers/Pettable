@@ -1,16 +1,16 @@
 package net.ellivers.pettable.client;
 
 import net.ellivers.pettable.config.ModConfig;
+import net.ellivers.pettable.mixin.InGameHudAccessor;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.sound.SoundManager;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.*;
@@ -20,7 +20,6 @@ import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.EntityHitResult;
@@ -131,6 +130,8 @@ public class PettableClient implements ClientModInitializer {
         PlayerEntity playerEntity = MinecraftClient.getInstance().player;
         if (ModConfig.heal_owner && entity instanceof TameableEntity && ((TameableEntity) entity).isOwner(playerEntity)) {
             pettingEffects(playerEntity.getEntityWorld(), playerEntity);
+            InGameHud hud = MinecraftClient.getInstance().inGameHud;
+            ((InGameHudAccessor) hud).setHeartJumpEndTick(hud.getTicks() + 10);
         }
         if (shouldShowEffects(entity)) pettingEffects(entity.getEntityWorld(), entity);
         playerEntity.swingHand(playerEntity.getActiveHand());

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "pettable",
-  "version": "1.4.0",
+  "version": "1.4.1",
 
   "name": "Pettable",
   "description": "Pet all friendly creatures!",
@@ -28,11 +28,12 @@
     ]
   },
   "mixins": [
+    "pettable.mixins.json"
   ],
 
   "depends": {
     "fabricloader": ">=0.14.21",
-    "minecraft": ">=1.20.1",
+    "minecraft": ">=1.20.4",
     "fabric": "*"
   }
 }
